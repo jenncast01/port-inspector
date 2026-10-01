@@ -1,92 +1,98 @@
-# Práctica: Verificador de Puertos en Linux (Docker) y Windows (PowerShell)
+# Port Inspector: Verificador de Puertos en Linux y Windows
 
-Esta práctica implementa la verificación de estado de un puerto TCP (abierto o cerrado) en dos entornos:
-1. **Linux (Bash en contenedor Docker)**: [check_port.sh](file:///C:/Users/jenni/.gemini/antigravity/scratch/practica_puertos/check_port.sh)
-2. **Windows (PowerShell)**: [check_port.ps1](file:///C:/Users/jenni/.gemini/antigravity/scratch/practica_puertos/check_port.ps1)
+Herramienta multiplataforma para verificar el estado de un puerto TCP (abierto o cerrado) implementada tanto para entornos **Linux** (Shell Script con Docker) como para **Windows** (PowerShell).
+
+---
+
+## 📁 Estructura del Proyecto
+
+```text
+port-inspector/
+├── linux/
+│   └── check_port.sh       # Script en Bash para Linux / Docker
+├── windows/
+│   └── check_port.ps1      # Script en PowerShell para Windows
+├── .gitignore              # Archivos ignorados por Git
+└── README.md               # Documentación y guía de uso
+```
 
 ---
 
 ## 1. Verificación de Imágenes de Linux en Docker
 
-Al verificar con `docker images`, se confirmó que cuentas con imágenes oficiales basadas en Linux:
-- `ubuntu:24.04` (Ubuntu Linux)
-- `python:3.11-slim` (Debian Linux)
+Antes de ejecutar las pruebas en Linux, se verifica que se cuente con una imagen oficial en Docker:
+
+```powershell
+docker images
+```
+
+Se utilizó la imagen oficial **`ubuntu:24.04`** (también compatible con `python:3.11-slim` o cualquier distribución con Bash).
 
 ---
 
-## 2. Parte 1: Shell Script en Linux con Docker (`check_port.sh`)
+## 2. Linux: Bash Script con Docker (`linux/check_port.sh`)
 
 ### ¿Cómo funciona?
-El script toma el puerto como argumento obligatorio y un host opcional (por defecto `127.0.0.1`). Valida que el puerto sea un número entre 1 y 65535 y utiliza `/dev/tcp` nativo de Bash con un timeout de 2 segundos para comprobar si el puerto responde.
+Recibe el puerto como argumento obligatorio y un host opcional (por defecto `127.0.0.1`). Valida que el puerto sea numérico (1-65535) y utiliza el mecanismo nativo `/dev/tcp` de Bash con un timeout de 2 segundos.
 
-### Ejecución en Docker:
+### Ejecución con Docker:
 
-Abre PowerShell en esta carpeta (`C:\Users\jenni\.gemini\antigravity\scratch\practica_puertos`) y ejecuta:
+Desde la raíz del proyecto (`port-inspector`):
 
-#### A. Probar un puerto ABIERTO (ejemplo con `google.com` en puerto 80):
+#### 🔹 Probar un puerto ABIERTO (ej. puerto 80 hacia `google.com`):
 ```powershell
-docker run --rm -v "${PWD}:/app" -w /app ubuntu:24.04 bash check_port.sh 80 google.com
+docker run --rm -v "${PWD}:/app" -w /app ubuntu:24.04 bash linux/check_port.sh 80 google.com
 ```
-**Salida esperada:**
+**Salida:**
 ```text
 Verificando puerto 80 en google.com...
 [ABIERTO] El puerto 80 en google.com está ABIERTO.
 ```
 
-#### B. Probar un puerto CERRADO (ejemplo puerto no asignado 54321):
+#### 🔹 Probar un puerto CERRADO (ej. puerto 54321):
 ```powershell
-docker run --rm -v "${PWD}:/app" -w /app ubuntu:24.04 bash check_port.sh 54321 1.1.1.1
+docker run --rm -v "${PWD}:/app" -w /app ubuntu:24.04 bash linux/check_port.sh 54321 1.1.1.1
 ```
-**Salida esperada:**
+**Salida:**
 ```text
 Verificando puerto 54321 en 1.1.1.1...
 [CERRADO] El puerto 54321 en 1.1.1.1 está CERRADO o no responde.
 ```
 
-#### C. Probar en localhost dentro del contenedor:
-```powershell
-docker run --rm -v "${PWD}:/app" -w /app python:3.11-slim bash -c "python3 -m http.server 8080 & sleep 1; bash check_port.sh 8080"
-```
-
 ---
 
-## 3. Parte 2: Script Equivalente en Windows con PowerShell (`check_port.ps1`)
+## 3. Windows: PowerShell Script (`windows/check_port.ps1`)
 
 ### ¿Cómo funciona?
-Recibe el parámetro `$Port` (validado entre 1 y 65535) y opcionalmente `$HostName` (por defecto `127.0.0.1`). Utiliza el cliente TCP de .NET (`System.Net.Sockets.TcpClient`) para probar la conexión con timeout inmediato sin bloqueos.
+Recibe el parámetro `-Port` (validado de 1 a 65535) y opcionalmente `-HostName` (por defecto `127.0.0.1`). Utiliza `System.Net.Sockets.TcpClient` de .NET con timeout inmediato para verificar el estado del socket sin demoras.
 
 ### Ejecución en PowerShell:
 
-#### A. Probar un puerto ABIERTO (puerto 135 local de Windows o 443 en internet):
+Desde la raíz del proyecto (`port-inspector`):
+
 ```powershell
-.\check_port.ps1 135
+# Habilitar ejecución si es necesario:
+Set-ExecutionPolicy -Scope Process Bypass -Force
 ```
-o hacia un servidor web:
+
+#### 🔹 Probar un puerto ABIERTO (ej. puerto local 135 o 443 en internet):
 ```powershell
-.\check_port.ps1 443 google.com
+.\windows\check_port.ps1 135
 ```
-**Salida esperada:**
+*(O hacia un host remoto: `.\windows\check_port.ps1 443 google.com`)*
+
+**Salida:**
 ```text
 Verificando puerto 135 en 127.0.0.1...
-[ABIERTO] El puerto 135 en 127.0.0.1 está ABIERTO.
+[ABIERTO] El puerto 135 en 127.0.0.1 esta ABIERTO.
 ```
 
-#### B. Probar un puerto CERRADO:
+#### 🔹 Probar un puerto CERRADO:
 ```powershell
-.\check_port.ps1 54321
+.\windows\check_port.ps1 54321
 ```
-**Salida esperada:**
+**Salida:**
 ```text
 Verificando puerto 54321 en 127.0.0.1...
-[CERRADO] El puerto 54321 en 127.0.0.1 está CERRADO o no responde.
+[CERRADO] El puerto 54321 en 127.0.0.1 esta CERRADO o no responde.
 ```
-
----
-
-## 4. Alternativa nativa en PowerShell (`Test-NetConnection`)
-
-En caso de que el profesor prefiera ver el cmdlet nativo de PowerShell `Test-NetConnection`:
-```powershell
-Test-NetConnection -ComputerName 127.0.0.1 -Port 135
-```
-El script [check_port.ps1](file:///C:/Users/jenni/.gemini/antigravity/scratch/practica_puertos/check_port.ps1) ya implementa esta lógica de forma optimizada y formateada con colores para entregar.
